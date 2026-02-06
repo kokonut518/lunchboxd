@@ -3,16 +3,31 @@
 import { useMemo, useState } from "react";
 import { useAuth } from "@/lib/auth-context";
 import { useRestaurantLogs } from "@/lib/use-restaurant-logs";
+import { useEatLater } from "@/lib/use-eat-later";
 import { LogCard } from "@/components/LogCard";
 import { AddLogForm } from "@/components/AddLogForm";
+import { EatLaterCard } from "@/components/EatLaterCard";
+import { EatLaterForm } from "@/components/EatLaterForm";
 import { AuthForm } from "@/components/AuthForm";
 
 export default function Home() {
   const { user, loading: authLoading, signOut } = useAuth();
   const { logs, addLog, updateLog, deleteLog, loading: logsLoading, error } =
     useRestaurantLogs(user?.id);
+  const {
+    items: eatLater,
+    addItem,
+    updateItem,
+    deleteItem,
+    loading: eatLaterLoading,
+    error: eatLaterError,
+  } = useEatLater(user?.id);
+
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState<null | (typeof logs)[number]>(null);
+  const [showEatLaterForm, setShowEatLaterForm] = useState(false);
+  const [editingEatLater, setEditingEatLater] =
+    useState<null | (typeof eatLater)[number]>(null);
   const [selectedTag, setSelectedTag] = useState<string | null>(null);
 
   const allTags = useMemo(() => {
@@ -78,9 +93,19 @@ export default function Home() {
                 setEditing(null);
                 setShowForm(true);
               }}
-              className="rounded-full bg-amber-500 px-4 py-2 text-sm font-medium text-white transition hover:bg-amber-600"
+              className="rounded-full bg-pink-500 px-4 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-pink-600"
             >
               + Log restaurant
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setEditingEatLater(null);
+                setShowEatLaterForm(true);
+              }}
+              className="hidden rounded-full border border-emerald-500 px-4 py-2 text-sm font-medium text-emerald-600 transition hover:bg-emerald-50 dark:border-emerald-400 dark:text-emerald-300 dark:hover:bg-emerald-400/10 sm:inline-flex"
+            >
+              Eat Later
             </button>
           </div>
         </div>
@@ -90,6 +115,11 @@ export default function Home() {
         {error && (
           <p className="mb-4 rounded-lg bg-red-50 px-4 py-2 text-sm text-red-700 dark:bg-red-900/20 dark:text-red-400" role="alert">
             {error}
+          </p>
+        )}
+        {eatLaterError && (
+          <p className="mb-4 rounded-lg bg-red-50 px-4 py-2 text-sm text-red-700 dark:bg-red-900/20 dark:text-red-400" role="alert">
+            {eatLaterError}
           </p>
         )}
 
@@ -103,7 +133,7 @@ export default function Home() {
               onClick={() => setSelectedTag(null)}
               className={`rounded-full px-3 py-1 text-xs font-medium transition ${
                 selectedTag === null
-                  ? "bg-amber-500 text-white"
+                  ? "bg-pink-500 text-white"
                   : "bg-white text-zinc-700 hover:bg-zinc-50 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800"
               }`}
             >
@@ -116,7 +146,7 @@ export default function Home() {
                 onClick={() => setSelectedTag(t)}
                 className={`rounded-full px-3 py-1 text-xs font-medium transition ${
                   selectedTag === t
-                    ? "bg-amber-500 text-white"
+                    ? "bg-pink-500 text-white"
                     : "bg-white text-zinc-700 hover:bg-zinc-50 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800"
                 }`}
               >
@@ -125,6 +155,26 @@ export default function Home() {
             ))}
           </div>
         )}
+
+        <section aria-labelledby="visited-heading" className="mb-10">
+          <div className="mb-3 flex items-center justify-between gap-2">
+            <h2
+              id="visited-heading"
+              className="text-sm font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400"
+            >
+              Visited
+            </h2>
+            <button
+              type="button"
+              onClick={() => {
+                setEditing(null);
+                setShowForm(true);
+              }}
+              className="inline-flex items-center rounded-full border border-pink-500 px-3 py-1 text-xs font-medium text-pink-600 hover:bg-pink-50 dark:border-pink-400 dark:text-pink-300 dark:hover:bg-pink-400/10 sm:hidden"
+            >
+              + Log restaurant
+            </button>
+          </div>
 
         {logsLoading ? (
           <p className="text-center text-zinc-500 dark:text-zinc-400">
@@ -141,7 +191,7 @@ export default function Home() {
             <button
               type="button"
               onClick={() => setShowForm(true)}
-              className="mt-6 rounded-full bg-amber-500 px-5 py-2.5 text-sm font-medium text-white transition hover:bg-amber-600"
+              className="mt-6 rounded-full bg-pink-500 px-5 py-2.5 text-sm font-medium text-white transition hover:bg-pink-600"
             >
               Log your first restaurant
             </button>
@@ -154,7 +204,7 @@ export default function Home() {
             <button
               type="button"
               onClick={() => setSelectedTag(null)}
-              className="mt-5 rounded-full bg-amber-500 px-5 py-2.5 text-sm font-medium text-white transition hover:bg-amber-600"
+              className="mt-5 rounded-full bg-pink-500 px-5 py-2.5 text-sm font-medium text-white transition hover:bg-pink-600"
             >
               Clear filter
             </button>
@@ -175,6 +225,53 @@ export default function Home() {
             ))}
           </ul>
         )}
+        </section>
+
+        <section aria-labelledby="eat-later-heading">
+          <div className="mb-3 flex items-center justify-between gap-2">
+            <h2
+              id="eat-later-heading"
+              className="text-sm font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400"
+            >
+              Eat Later
+            </h2>
+            <button
+              type="button"
+              onClick={() => {
+                setEditingEatLater(null);
+                setShowEatLaterForm(true);
+              }}
+              className="inline-flex items-center rounded-full border border-zinc-300 px-3 py-1 text-xs font-medium text-zinc-700 hover:bg-zinc-50 dark:border-zinc-600 dark:text-zinc-200 dark:hover:bg-zinc-800"
+            >
+              + Add
+            </button>
+          </div>
+
+          {eatLaterLoading ? (
+            <p className="text-center text-zinc-500 dark:text-zinc-400">
+              Loading your list…
+            </p>
+          ) : eatLater.length === 0 ? (
+            <p className="text-sm text-zinc-500 dark:text-zinc-400">
+              Save restaurants you want to try here.
+            </p>
+          ) : (
+            <ul className="flex flex-col gap-4">
+              {eatLater.map((item) => (
+                <li key={item.id}>
+                  <EatLaterCard
+                    item={item}
+                    onDelete={deleteItem}
+                    onEdit={(it) => {
+                      setEditingEatLater(it);
+                      setShowEatLaterForm(true);
+                    }}
+                  />
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
       </main>
 
       {showForm && (
@@ -202,6 +299,33 @@ export default function Home() {
           onClose={() => {
             setShowForm(false);
             setEditing(null);
+          }}
+        />
+      )}
+
+      {showEatLaterForm && (
+        <EatLaterForm
+          existingTags={allTags}
+          initial={
+            editingEatLater
+              ? {
+                  name: editingEatLater.name,
+                  location: editingEatLater.location,
+                  notes: editingEatLater.notes,
+                  tags: editingEatLater.tags,
+                }
+              : undefined
+          }
+          title={editingEatLater ? "Edit Eat Later" : "Add to Eat Later"}
+          submitLabel={editingEatLater ? "Save changes" : "Save"}
+          onSubmit={async (draft) => {
+            if (editingEatLater) await updateItem(editingEatLater.id, draft);
+            else await addItem(draft);
+            setEditingEatLater(null);
+          }}
+          onClose={() => {
+            setShowEatLaterForm(false);
+            setEditingEatLater(null);
           }}
         />
       )}

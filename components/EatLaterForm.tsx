@@ -1,16 +1,15 @@
 "use client";
 
 import { useMemo, useState, type FormEvent } from "react";
-import type { RestaurantLog } from "@/lib/types";
-import { StarRatingInput } from "@/components/StarRating";
+import type { EatLaterEntry } from "@/lib/use-eat-later";
 
 type Props = {
   onSubmit: (
-    log: Omit<RestaurantLog, "id" | "createdAt">
+    item: Omit<EatLaterEntry, "id" | "createdAt">
   ) => void | Promise<void>;
   onClose: () => void;
   existingTags: string[];
-  initial?: Partial<Omit<RestaurantLog, "id" | "createdAt">>;
+  initial?: Partial<Omit<EatLaterEntry, "id" | "createdAt">>;
   title?: string;
   submitLabel?: string;
 };
@@ -19,21 +18,17 @@ function normalizeTag(raw: string) {
   return raw.trim().replace(/\s+/g, " ");
 }
 
-export function AddLogForm({
+export function EatLaterForm({
   onSubmit,
   onClose,
   existingTags,
   initial,
-  title = "Log a restaurant",
-  submitLabel = "Log it",
+  title = "Add to Eat Later",
+  submitLabel = "Save",
 }: Props) {
   const [name, setName] = useState(initial?.name ?? "");
   const [location, setLocation] = useState(initial?.location ?? "");
-  const [rating, setRating] = useState<number>(initial?.rating ?? 0);
-  const [dateVisited, setDateVisited] = useState(
-    initial?.dateVisited ?? new Date().toISOString().slice(0, 10)
-  );
-  const [review, setReview] = useState(initial?.review ?? "");
+  const [notes, setNotes] = useState(initial?.notes ?? "");
   const [tags, setTags] = useState<string[]>(initial?.tags ?? []);
   const [tagInput, setTagInput] = useState("");
 
@@ -63,9 +58,7 @@ export function AddLogForm({
     await onSubmit({
       name: name.trim(),
       location: location.trim() || undefined,
-      rating,
-      dateVisited,
-      review: review.trim() || undefined,
+      notes: notes.trim() || undefined,
       tags,
     });
     onClose();
@@ -77,11 +70,11 @@ export function AddLogForm({
         className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl dark:bg-zinc-900"
         role="dialog"
         aria-modal="true"
-        aria-labelledby="add-log-title"
+        aria-labelledby="eat-later-title"
       >
         <div className="mb-4 flex items-center justify-between">
           <h2
-            id="add-log-title"
+            id="eat-later-title"
             className="text-xl font-semibold text-zinc-900 dark:text-zinc-100"
           >
             {title}
@@ -95,63 +88,52 @@ export function AddLogForm({
             ✕
           </button>
         </div>
+
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           <div>
-            <label htmlFor="name" className="mb-1 block text-sm font-medium text-zinc-700 dark:text-zinc-300">
+            <label
+              htmlFor="eat-name"
+              className="mb-1 block text-sm font-medium text-zinc-700 dark:text-zinc-300"
+            >
               Restaurant name *
             </label>
             <input
-              id="name"
+              id="eat-name"
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder="e.g. The French Laundry"
+              placeholder="e.g. Noma"
               className="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-zinc-900 placeholder-zinc-400 focus:border-amber-500 focus:outline-none focus:ring-1 focus:ring-amber-500 dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-100 dark:placeholder-zinc-500"
               required
             />
           </div>
+
           <div>
-            <label htmlFor="location" className="mb-1 block text-sm font-medium text-zinc-700 dark:text-zinc-300">
+            <label
+              htmlFor="eat-location"
+              className="mb-1 block text-sm font-medium text-zinc-700 dark:text-zinc-300"
+            >
               Location
             </label>
             <input
-              id="location"
+              id="eat-location"
               type="text"
               value={location}
               onChange={(e) => setLocation(e.target.value)}
-              placeholder="e.g. Yountville, CA"
+              placeholder="e.g. Copenhagen, Denmark"
               className="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-zinc-900 placeholder-zinc-400 focus:border-amber-500 focus:outline-none focus:ring-1 focus:ring-amber-500 dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-100 dark:placeholder-zinc-500"
             />
           </div>
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="mb-1 block text-sm font-medium text-zinc-700 dark:text-zinc-300">
-                Rating
-              </label>
-              <StarRatingInput value={rating} onChange={setRating} />
-            </div>
-            <div>
-              <label htmlFor="dateVisited" className="mb-1 block text-sm font-medium text-zinc-700 dark:text-zinc-300">
-                Date visited
-              </label>
-              <input
-                id="dateVisited"
-                type="date"
-                value={dateVisited}
-                onChange={(e) => setDateVisited(e.target.value)}
-                className="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-zinc-900 focus:border-amber-500 focus:outline-none focus:ring-1 focus:ring-amber-500 dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-100"
-              />
-            </div>
-          </div>
+
           <div>
             <label
-              htmlFor="tags"
+              htmlFor="eat-tags"
               className="mb-1 block text-sm font-medium text-zinc-700 dark:text-zinc-300"
             >
-              Tags (what you ate)
+              Tags (what you want to try)
             </label>
             <input
-              id="tags"
+              id="eat-tags"
               type="text"
               value={tagInput}
               onChange={(e) => setTagInput(e.target.value)}
@@ -160,7 +142,6 @@ export function AddLogForm({
                   e.preventDefault();
                   addTag(tagInput);
                 } else if (e.key === "," || e.key === "Tab") {
-                  // comma / tab to accept tag quickly
                   if (tagInput.trim()) {
                     e.preventDefault();
                     addTag(tagInput.replace(/,$/, ""));
@@ -169,7 +150,7 @@ export function AddLogForm({
                   removeTag(tags[tags.length - 1]);
                 }
               }}
-              placeholder="e.g. ramen, tacos, tiramisu (press Enter)"
+              placeholder="e.g. omakase, xiaolongbao, brunch (press Enter)"
               className="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-zinc-900 placeholder-zinc-400 focus:border-amber-500 focus:outline-none focus:ring-1 focus:ring-amber-500 dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-100 dark:placeholder-zinc-500"
             />
 
@@ -206,19 +187,24 @@ export function AddLogForm({
               </div>
             )}
           </div>
+
           <div>
-            <label htmlFor="review" className="mb-1 block text-sm font-medium text-zinc-700 dark:text-zinc-300">
-              Review / notes
+            <label
+              htmlFor="eat-notes"
+              className="mb-1 block text-sm font-medium text-zinc-700 dark:text-zinc-300"
+            >
+              Notes
             </label>
             <textarea
-              id="review"
-              value={review}
-              onChange={(e) => setReview(e.target.value)}
-              placeholder="What did you order? Would you go back?"
+              id="eat-notes"
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              placeholder="Why do you want to go? Specific dishes to try?"
               rows={3}
               className="w-full resize-none rounded-lg border border-zinc-300 bg-white px-3 py-2 text-zinc-900 placeholder-zinc-400 focus:border-amber-500 focus:outline-none focus:ring-1 focus:ring-amber-500 dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-100 dark:placeholder-zinc-500"
             />
           </div>
+
           <div className="flex gap-2 pt-2">
             <button
               type="button"
@@ -229,7 +215,7 @@ export function AddLogForm({
             </button>
             <button
               type="submit"
-              className="flex-1 rounded-lg bg-pink-500 py-2.5 font-medium text-white transition hover:bg-pink-600"
+              className="flex-1 rounded-lg bg-emerald-500 py-2.5 font-medium text-white transition hover:bg-emerald-600"
             >
               {submitLabel}
             </button>
@@ -239,3 +225,4 @@ export function AddLogForm({
     </div>
   );
 }
+

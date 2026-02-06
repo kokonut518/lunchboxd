@@ -2,42 +2,46 @@
 
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { createClient } from "@/lib/supabase/client";
-import type { RestaurantLog } from "./types";
+
+export type EatLaterEntry = {
+  id: string;
+  name: string;
+  location?: string;
+  notes?: string;
+  tags: string[];
+  createdAt: string;
+};
 
 type DbRow = {
   id: string;
   user_id: string;
   name: string;
   location: string | null;
-  rating: number | string;
-  date_visited: string;
-  review: string | null;
+  notes: string | null;
   tags: string[] | null;
   created_at: string;
 };
 
-function rowToLog(row: DbRow): RestaurantLog {
+function rowToEntry(row: DbRow): EatLaterEntry {
   return {
     id: row.id,
     name: row.name,
     location: row.location ?? undefined,
-    rating: Number(row.rating),
-    dateVisited: row.date_visited,
-    review: row.review ?? undefined,
+    notes: row.notes ?? undefined,
     tags: row.tags ?? [],
     createdAt: row.created_at,
   };
 }
 
-export function useRestaurantLogs(userId: string | undefined) {
-  const [logs, setLogs] = useState<RestaurantLog[]>([]);
+export function useEatLater(userId: string | undefined) {
+  const [items, setItems] = useState<EatLaterEntry[]>([]);
   const [loading, setLoading] = useState(!!userId);
   const [error, setError] = useState<string | null>(null);
   const supabase = useMemo(() => createClient(), []);
 
-  const fetchLogs = useCallback(async () => {
+  const fetchItems = useCallback(async () => {
     if (!userId) {
-      setLogs([]);
+      setItems([]);
       setLoading(false);
       return;
     }
@@ -46,102 +50,99 @@ export function useRestaurantLogs(userId: string | undefined) {
     setError(null);
 
     const { data, error: e } = await supabase
-      .from("restaurant_logs")
+      .from("eat_later")
       .select("*")
       .eq("user_id", userId)
       .order("created_at", { ascending: false });
     if (e) {
       setError(e.message);
-      setLogs([]);
+      setItems([]);
     } else {
-      setLogs((data ?? []).map(rowToLog));
+      setItems((data ?? []).map(rowToEntry));
     }
     setLoading(false);
   }, [supabase, userId]);
 
   useEffect(() => {
     if (!userId) {
-      setLogs([]);
+      setItems([]);
       setLoading(false);
       return;
     }
 
-    fetchLogs();
+    fetchItems();
 
     const channel = supabase
-      .channel("restaurant_logs")
+      .channel("eat_later")
       .on(
         "postgres_changes",
         {
           event: "*",
           schema: "public",
-          table: "restaurant_logs",
+          table: "eat_later",
           filter: `user_id=eq.${userId}`,
         },
-        () => fetchLogs()
+        () => fetchItems()
       )
       .subscribe();
 
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [userId, supabase, fetchLogs]);
+  }, [userId, supabase, fetchItems]);
 
-  const addLog = useCallback(
-    async (log: Omit<RestaurantLog, "id" | "createdAt">) => {
+  const addItem = useCallback(
+    async (item: Omit<EatLaterEntry, "id" | "createdAt">) => {
       if (!userId) return;
       setError(null);
-      const { error: e } = await supabase.from("restaurant_logs").insert({
+      const { error: e } = await supabase.from("eat_later").insert({
         user_id: userId,
-        name: log.name,
-        location: log.location ?? null,
-        rating: log.rating,
-        date_visited: log.dateVisited,
-        review: log.review ?? null,
-        tags: log.tags ?? [],
+        name: item.name,
+        location: item.location ?? null,
+        notes: item.notes ?? null,
+        tags: item.tags ?? [],
       });
       if (e) setError(e.message);
-      else await fetchLogs();
+      else await fetchItems();
     },
-    [userId, supabase, fetchLogs]
+    [userId, supabase, fetchItems]
   );
 
-  const updateLog = useCallback(
-    async (id: string, log: Omit<RestaurantLog, "id" | "createdAt">) => {
+  const updateItem = useCallback(
+    async (id: string, item: Omit<EatLaterEntry, "id" | "createdAt">) => {
       if (!userId) return;
       setError(null);
       const { error: e } = await supabase
-        .from("restaurant_logs")
+        .from("eat_later")
         .update({
-          name: log.name,
-          location: log.location ?? null,
-          rating: log.rating,
-          date_visited: log.dateVisited,
-          review: log.review ?? null,
-          tags: log.tags ?? [],
+          name: item.name,
+          location: item.location ?? null,
+          notes: item.notes ?? null,
+          tags: item.tags ?? [],
         })
         .eq("id", id)
         .eq("user_id", userId);
       if (e) setError(e.message);
-      else await fetchLogs();
+      else await fetchItems();
     },
-    [userId, supabase, fetchLogs]
+    [userId, supabase, fetchItems]
   );
 
-  const deleteLog = useCallback(
+  const deleteItem = useCallback(
     async (id: string) => {
       if (!userId) return;
       setError(null);
       const { error: e } = await supabase
-        .from("restaurant_logs")
+        .from("eat_later")
         .delete()
         .eq("id", id)
         .eq("user_id", userId);
       if (e) setError(e.message);
-      else await fetchLogs();
+      else await fetchItems();
     },
-    [userId, supabase, fetchLogs]
+    [userId, supabase, fetchItems]
   );
 
-  return { logs, addLog, updateLog, deleteLog, loading, error };
+  return { items, addItem, updateItem, deleteItem, loading, error };
 }
+

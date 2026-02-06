@@ -1,8 +1,9 @@
 @import "tailwindcss";
 
 :root {
-  --background: #fafafa;
-  --foreground: #171717;
+  /* Summer watermelon palette */
+  --background: #fff7f8; /* soft pink */
+  --foreground: #064e3b; /* deep green */
 }
 
 @theme inline {
@@ -14,8 +15,8 @@
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #09090b;
-    --foreground: #fafafa;
+    --background: #022c22;
+    --foreground: #fef3c7; /* warm light */
   }
 }
 

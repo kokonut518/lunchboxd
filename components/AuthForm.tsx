@@ -97,7 +97,7 @@ export function AuthForm() {
         <button
           type="submit"
           disabled={loading}
-          className="w-full rounded-lg bg-amber-500 py-2.5 font-medium text-white transition hover:bg-amber-600 disabled:opacity-50"
+          className="w-full rounded-lg bg-pink-500 py-2.5 font-medium text-white transition hover:bg-pink-600 disabled:opacity-50"
         >
           {loading ? "Please wait…" : mode === "signin" ? "Sign in" : "Create account"}
         </button>
